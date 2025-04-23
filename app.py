@@ -2,6 +2,15 @@ import pandas as pd
 import streamlit as st
 import pickle
 
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+uri = "mongodb+srv://3836bhagatsingh:bhagat1234@cluster0.a76tmyr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+
+# Create a new client and connect to the server
+client = MongoClient(uri, server_api=ServerApi('1'))
+db = client['Diabetes']
+collection = db['prediction']
+
 def load_model():
     with open('./predict_diabetes.pkl', 'rb') as file:
         ridge, lasso, scaler = pickle.load(file)
@@ -41,8 +50,24 @@ def main():
         processed_data = preprocess_data(user_input, scaler)
         ridge_ans = prediction_ridge(processed_data, ridge)
         lasso_ans = prediction_lasso(processed_data, lasso)
+        input_dict = {
+        'age': age,
+        'sex': sex,
+        'bmi': bmi,
+        'bp': bp,
+        's1': s1,
+        's2': s2,
+        's3': s3,
+        's4': s4,
+        's5': s5,
+        's6': s6,
+        'ridge_prediction': float(ridge_ans[0]),
+        'lasso_prediction': float(lasso_ans[0])
+    }
+
         st.success(f"Ridge Regression Prediction: {ridge_ans[0]:.2f}")
         st.success(f"Lasso Regression Prediction: {lasso_ans[0]:.2f}")
+        collection.insert_one(input_dict)
 
 if __name__ == '__main__':
     main()
